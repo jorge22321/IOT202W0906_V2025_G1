@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Sensores</title>
+  
+  <!-- Incluir FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
+
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <main>
+    <div class="chart-card presion-chart">
+      <h2>Presión (hPa)</h2>
+      <canvas id="presChart"></canvas>
+    </div>
+    <div class="chart-card temperatura-chart">
+      <h2>Temperatura (°C)</h2>
+      <div id="tempGauge" style="width: 100%; height: 200px;"></div>
+    </div>
+    <div class="chart-card humedad-chart">
+      <h2>Humedad (%)</h2>
+      <canvas id="humChart"></canvas>
+    </div>
+    <div class="chart-card co2-chart">
+      <h2>CO2 (ppm)</h2>
+      <canvas id="co2Chart"></canvas>
+    </div>
+    
+    <div class="chart-card umbral-chart">
+      <div class="umbral-container">
+        <div class="umbral-card">
+          <div class="umbral-header">
+            <i class="fas fa-thermometer-half"></i>
+            <span>Temperatura</span>
+          </div>
+          <div class="umbral-input">
+            <input type="number" id="tempUmbral" placeholder="26">
+            <span>°C</span>
+          </div>
+        </div>
+        <div class="umbral-card">
+          <div class="umbral-header">
+            <i class="fas fa-smog"></i>
+            <span>CO2</span>
+          </div>
+          <div class="umbral-input">
+            <input type="number" id="co2Umbral" placeholder="1000">
+            <span>ppm</span>
+          </div>
+        </div>
+        <button id="setUmbral" class="umbral-button">
+          <i class="fas fa-save"></i>
+          Guardar Umbrales
+        </button>
+      </div>
+    </div>
+
+    <div class="chart-card control-card">
+      <div class="control-content">
+        <div class="detalles">
+          <div id="alertas"></div> <!-- Contenedor para las alertas -->
+          <div class="umbral-indicador">
+            <div class="umbral-item">
+              <i class="fas fa-thermometer-half"></i>
+              <span id="currentTempUmbral">26°C</span>
+            </div>
+            <div class="umbral-item">
+              <i class="fas fa-smog"></i>
+              <span id="currentCO2Umbral">1000ppm</span>
+            </div>
+          </div>
+        </div>    
+        <div class="button">
+          <button class="control-button encendido"></button>
+          <button class="control-button apagado"></button>
+          <!-- Interruptor toggle en lugar del botón celeste -->
+          <div class="toggle-switch">
+            <div class="toggle-container">
+              <input type="checkbox" id="modo-toggle" class="toggle-input">
+              <label for="modo-toggle" class="toggle-label">
+                <span class="toggle-handle"></span>
+              </label>
+            </div>
+            <div class="toggle-text-container">
+              <span class="toggle-text automatico">AUTO</span>
+              <span class="toggle-text manual">MAN</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="icono">
+        <i class="fas fa-fan"></i>
+      </div>
+    </div>
+  </main>
+  
+  <script src="grafico.js"></script>
+</body>
+</html>
