@@ -1,0 +1,403 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #0a0a0a;
+  color: #e0e0e0;
+  overflow: hidden;
+}
+
+main {
+  padding: 17px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(4, auto);
+  gap: 17px;
+  max-width: 1365px;
+  margin: 0 auto;
+  grid-template-areas: 
+    "G1 G1 G2 G2 G3 G3"
+    "G4 G4 G6 G5 G5 G5";
+}
+
+.umbral-chart {
+  grid-area: G6;
+  background-color: #121212;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.presion-chart {
+  grid-area: G1;
+}
+
+.temperatura-chart {
+  grid-area: G2;
+}
+
+.humedad-chart {
+  grid-area: G3;
+}
+
+.co2-chart {
+  grid-area: G4;
+}
+
+.control-card {
+  grid-area: G5;
+}
+
+.chart-card {
+  background-color: #121212;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.7);
+}
+
+.chart-card h2 {
+  margin-top: 0;
+  font-size: 1rem;
+  color: #00ffcc;
+}
+
+canvas {
+  width: 100% !important;
+  height: 220px !important;
+}
+
+#tempGauge {
+  width: 120%; /* Aumenta el ancho del contenedor */
+  height: 200px;
+}
+
+.control-card {
+  display: flex;
+}
+
+.control-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #121212;
+  height: 100%;
+  width: 50%;
+}
+
+.detalles {
+  background-color: #121212;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 50%;
+}
+.button {
+  background-color: #121212;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 50%;
+}
+
+.control-button {
+  width: 70px;
+  height: 70px;
+  background-color: #00ffcc;
+  color: #121212;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.encendido {
+  background-color: rgb(11, 221, 11);
+}
+
+.apagado {
+  background-color: #e00e0e ;
+}
+
+.icono {
+  background-color: #121212;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 50%;
+  overflow: hidden;
+}
+
+.icono i {
+  font-size: 180px; /* Ajusta el tamaño del ícono */
+  color: #00ffcc; /* Cambia el color del ícono */
+  opacity: 0.7; /* Hace el ícono semi-transparente */
+  border: 3px solid #00ffcc; /* Borde sólido del mismo color que el ícono */
+  border-radius: 50%; /* Hace que el borde sea circular */
+  padding: 10px; /* Espacio interno para que el borde no esté pegado al ícono */
+  transition: transform 0.3s ease, opacity 0.3s ease; /* Transición suave */
+  opacity: 1; /* Hace el ícono completamente opaco al pasar el mouse */
+}
+
+
+
+.control-button.poder {
+  background-color: #00ffcc; /* Color celeste */
+  transition: background-color 0.3s ease;
+}
+
+.control-button.poder.manual {
+  background-color: #cccccc; /* Color gris cuando está en modo manual */
+}
+/* Estilos para las alertas */
+#alertas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.alerta {
+  padding: 10px;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 14px;
+  animation: fadeIn 0.5s ease;
+}
+
+.alerta-temperatura {
+  background-color: #ff6384; /* Rojo para temperatura alta */
+}
+
+.alerta-co2 {
+  background-color: #ff9f40; /* Naranja para CO2 alto */
+}
+
+.alerta-temperatura-solucionado {
+  background-color: #4bc0c0; /* Verde para temperatura normal */
+}
+
+.alerta-co2-solucionado {
+  background-color: #36a2eb; /* Azul para CO2 normal */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.umbral-chart:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.7);
+}
+
+.umbral-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.umbral-card {
+  background-color: #1e1e1e;
+  border-radius: 10px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.umbral-card:hover {
+  background-color: #2a2a2a;
+}
+
+.umbral-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #00ffcc;
+  font-size: 16px;
+}
+
+.umbral-header i {
+  font-size: 20px;
+}
+
+.umbral-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.umbral-input input {
+  width: 70%;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #00ffcc;
+  background-color: #121212;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.umbral-input input:focus {
+  border-color: #00cc99;
+  outline: none;
+}
+
+.umbral-input span {
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.umbral-button {
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  background-color: #00ffcc;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.umbral-button:hover {
+  background-color: #00cc99;
+}
+
+.umbral-button i {
+  font-size: 16px;
+}
+
+.umbral-indicador {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background-color: #1e1e1e;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.umbral-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+.umbral-item i {
+  color: #00ffcc;
+  font-size: 18px;
+}
+
+.umbral-item span {
+  font-weight: bold;
+}
+
+/* Estilos para el interruptor toggle vertical */
+/* Estilos para el interruptor toggle vertical */
+.toggle-switch {
+  position: relative;
+  display: flex; /* Usamos flex para alinear el toggle y las siglas */
+  align-items: center; /* Centra verticalmente el toggle y las siglas */
+  gap: 10px; /* Espacio entre el toggle y las siglas */
+}
+
+.toggle-container {
+  position: relative;
+  width: 30px; /* Ancho un poco más grande */
+  height: 60px; /* Altura más grande para el movimiento vertical */
+}
+
+.toggle-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #cccccc; /* Color en modo manual */
+  border-radius: 15px; /* Bordes más redondeados */
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-handle {
+  position: absolute;
+  bottom: 4px; /* La bolita comienza abajo */
+  left: 4px;
+  width: 22px; /* Tamaño un poco más grande */
+  height: 22px; /* Tamaño un poco más grande */
+  background-color: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.toggle-text-container {
+  display: flex;
+  flex-direction: column; /* Apila las siglas verticalmente */
+  justify-content: space-between; /* Separa las palabras */
+  height: 60px; /* Misma altura que el toggle */
+}
+
+.toggle-text {
+  font-size: 14px;
+  font-weight: bold;
+  color: #e0e0e0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* "AUTO" está arriba */
+.toggle-text.automatico {
+  align-self: flex-start; /* Alinea arriba */
+}
+
+/* "MAN" está abajo */
+.toggle-text.manual {
+  align-self: flex-end; /* Alinea abajo */
+}
+
+/* Cuando el toggle está en modo automático */
+.toggle-input:checked + .toggle-label {
+  background-color: #00ffcc; /* Color en modo automático */
+}
+
+.toggle-input:checked + .toggle-label .toggle-handle {
+  transform: translateY(-32px); /* Mueve la bolita hacia arriba */
+}
+
+/* Oculta "MAN" y muestra "AUTO" en modo automático */
+.toggle-input:checked + .toggle-label ~ .toggle-text-container .toggle-text.manual {
+  opacity: 0; /* Oculta "MAN" */
+  transform: translateY(10px); /* Mueve "MAN" hacia abajo */
+}
+
+.toggle-input:checked + .toggle-label ~ .toggle-text-container .toggle-text.automatico {
+  opacity: 1; /* Muestra "AUTO" */
+  transform: translateY(0); /* Restablece la posición de "AUTO" */
+}
+
+/* Oculta "AUTO" y muestra "MAN" en modo manual */
+.toggle-input:not(:checked) + .toggle-label ~ .toggle-text-container .toggle-text.manual {
+  opacity: 1; /* Muestra "MAN" */
+  transform: translateY(0); /* Restablece la posición de "MAN" */
+}
+
+.toggle-input:not(:checked) + .toggle-label ~ .toggle-text-container .toggle-text.automatico {
+  opacity: 0; /* Oculta "AUTO" */
+  transform: translateY(-10px); /* Mueve "AUTO" hacia arriba */
+}
