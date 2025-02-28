@@ -1,0 +1,339 @@
+#include <Wire.h>
+#include <SPI.h>
+#include <ArduinoJson.h> // Librería para manejar JSON
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
+#include <LiquidCrystal_I2C.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <MQUnifiedsensor.h>
+
+#define FAN_PIN 25  // Definir el pin del ventilador
+// 📌 Configuración de WiFi
+const char* ssid = "BONES";
+const char* password = "71655155";
+
+// 📌 Configuración del Broker MQTT
+const char* mqtt_server = "broker.emqx.io";  // Cambia a tu broker MQTT
+const int mqtt_port = 1883;
+const char* mqtt_topic = "iot/bme280";  // Tema donde se publicarán los datos
+const char* fan_topic = "iot/fan/control"; // Tópico para controlar el ventilador
+const char* mode_topic = "iot/modo";  //modo manual automatico
+const char* ventilador_status = "iot/status";  //enviar estado ventilador
+const char* config_umbral = "iot/umbral";
+
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// 📌 Configuración de la pantalla LCD (dirección 0x27 o 0x3F)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// 📌 Configuración del BME280
+#define SEALEVELPRESSURE_HPA (1013.25)
+Adafruit_BME280 bme; // Usa I2C
+
+// 📌 Variables de control
+String mode = "automatico";  // Puede ser "manual" o "auto"
+float tempThreshold = 26.0;  
+float co2Threshold = 1000.0;  
+// 📌 Variable para controlar el tiempo de publicación
+unsigned long lastPublishTime = 0;
+const long publishInterval = 5000; // Publicar cada 5s
+bool fanState = false;
+//SENSOR
+//Definitions
+#define placa "ESP-32"
+#define Voltage_Resolution 3.3
+#define pin 32 //Analog input 0 of your arduino
+#define type "MQ-135" //MQ135
+#define ADC_Bit_Resolution 12 // For arduino UNO/MEGA/NANO
+#define RatioMQ135CleanAir 3.6//RS / R0 = 3.6 ppm  
+
+double CO2 =(0);
+MQUnifiedsensor MQ135(placa, Voltage_Resolution, ADC_Bit_Resolution, pin, type);
+
+void setup() {
+    Serial.begin(115200);
+    if(Serial) Serial.println("Serial is open");
+    while (!Serial);  // Espera a que el puerto serie esté listo
+    Serial.println(F("ESP32 + BME280 + LCD + MQTT"));
+
+    Wire.begin(21, 22);  // Inicializa I2C en ESP32 (SDA=21, SCL=22)
+
+    // Inicializa la pantalla LCD
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("Iniciando...");
+
+    // Inicializa el BME280
+    if (!bme.begin(0x77)) {  // Asegúrate de usar la dirección correcta (0x76 o 0x77)
+        Serial.println("No se encontro BME280, revisa conexiones!");
+        lcd.setCursor(0, 1);
+        lcd.print("Error BME280!");
+        while (1) delay(10);
+    }
+
+    // Conectar a WiFi
+    conectarWiFi();
+
+    // Conectar a MQTT
+    client.setServer(mqtt_server, mqtt_port);
+    client.setCallback(callback);
+    conectarMQTT();
+
+    delay(2000);  // Pausa para mostrar el mensaje inicial
+    lcd.clear();
+
+  //Sensor MQ135     
+  //Set math model to calculate the PPM concentration and the value of constants
+  MQ135.setRegressionMethod(1); //_PPM =  a*ratio^b
+  MQ135.init(); 
+  Serial.print("Calibrating please wait.");
+  float calcR0 = 0;
+  for(int i = 1; i<=10; i ++)
+  {
+    MQ135.update(); // Update data, the arduino will be read the voltage on the analog pin
+    calcR0 += MQ135.calibrate(RatioMQ135CleanAir);
+    Serial.print(".");
+  }
+  MQ135.setR0(calcR0/10);
+  Serial.println("  done!.");
+  
+  //if(isinf(calcR0)) {Serial.println("Warning: Conection issue founded, R0 is infite (Open circuit detected) please check your wiring and supply"); while(1);}
+  //if(calcR0 == 0){Serial.println("Warning: Conection issue founded, R0 is zero (Analog pin with short circuit to ground) please check your wiring and supply"); while(1);}
+  /*****************************  MQ CAlibration ********************************************/ 
+  MQ135.serialDebug(false);
+  // Configurar ventilador como salida
+  pinMode(FAN_PIN, OUTPUT);
+  digitalWrite(FAN_PIN, LOW); // Apagar ventilador al inicio
+}
+
+void loop() { 
+    if (!client.connected()) {
+        conectarMQTT();
+    }
+    client.loop(); // Mantiene la conexión MQTT
+    // Publicar datos cada 5 segundos
+    if (millis() - lastPublishTime >= publishInterval) {
+        lastPublishTime = millis();
+        mostrarDatos();
+        enviarDatosMQTT();
+    }
+}
+
+// 📌 Función para conectar a WiFi
+void conectarWiFi() {
+    Serial.print("Conectando a WiFi: ");
+    Serial.println(ssid);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Conectando WiFi");
+
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        Serial.print(".");
+    }
+
+    Serial.println("\nWiFi conectado");
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("WiFi Conectado!");
+}
+
+// 📌 Función para conectar a MQTT
+void conectarMQTT() {
+    while (!client.connected()) {
+        Serial.print("Conectando a MQTT... ");
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Conectando MQTT");
+
+        if (client.connect("ESP32_BME280")) {
+            Serial.println("Conectado!");
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("MQTT Conectado!");
+            // Suscribirse al tópico para controlar el ventilador
+            client.subscribe(fan_topic);
+            client.subscribe(mode_topic);
+            client.subscribe(config_umbral);
+        } else {
+            Serial.print("Fallo, rc=");
+            Serial.print(client.state());
+            Serial.println(" Intentando de nuevo en 5s");
+            delay(5000);
+        }
+    }
+}
+
+// 📌 Función para leer y mostrar los datos del BME280 en LCD
+void mostrarDatos() {
+    float temp = bme.readTemperature();
+    float pres = bme.readPressure() / 100.0F;
+    float hum = bme.readHumidity();
+
+    // Muestra en el Monitor Serie
+    Serial.print("Temp: "); Serial.print(temp); Serial.println(" °C");
+    Serial.print("Presion: "); Serial.print(pres); Serial.println(" hPa");
+    Serial.print("Humedad: "); Serial.print(hum); Serial.println(" %");
+    Serial.println("-------------------");
+
+    // Muestra en la LCD
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("T:");
+    lcd.print(temp);
+    lcd.print("C H:");
+    lcd.print(hum);
+    lcd.print("%");
+
+    lcd.setCursor(0, 1);
+    lcd.print("P:");
+    lcd.print(pres);
+    lcd.print("hPa");
+}
+
+//  Función para enviar los datos por MQTT en formato JSON
+void enviarDatosMQTT() {
+    float temp = bme.readTemperature();
+    float pres = bme.readPressure() / 100.0F;
+    float hum = bme.readHumidity();
+    //sensor MQ135
+    float CO = 0;           // Monóxido de carbono en ppm (1-50 ppm)
+    float Alcohol = 0;    // Alcohol en ppm (10-500 ppm)
+    float Toluene = 0;     // Tolueno en ppm (5-100 ppm)
+    float NH4 = 0;          // Amoníaco NH4 en ppm (1-30 ppm)
+    float Acetone = 0;     // Acetona en ppm (5-200 ppm)
+    int select =0;
+    if (select == 0){    //mandamos datos ficticios
+      // Generar valores aleatorios para los gases
+      CO2 = random(400, 1000);      // CO2 en ppm (400-1000 ppm)
+      CO = random(1, 50);           // Monóxido de carbono en ppm (1-50 ppm)
+      Alcohol = random(10, 500);    // Alcohol en ppm (10-500 ppm)
+      Toluene = random(5, 100);     // Tolueno en ppm (5-100 ppm)
+      NH4 = random(1, 30);          // Amoníaco NH4 en ppm (1-30 ppm)
+      Acetone = random(5, 200);     // Acetona en ppm (5-200 ppm)
+
+      // Enviar datos ficticios al monitor serie
+      Serial.print("CO2: "); Serial.print(CO2); Serial.println(" ppm");
+      Serial.print("CO: "); Serial.print(CO); Serial.println(" ppm");
+      Serial.print("Alcohol: "); Serial.print(Alcohol); Serial.println(" ppm");
+      Serial.print("Toluene: "); Serial.print(Toluene); Serial.println(" ppm");
+      Serial.print("NH4: "); Serial.print(NH4); Serial.println(" ppm");
+      Serial.print("Acetone: "); Serial.print(Acetone); Serial.println(" ppm");
+
+      Serial.println("Enviando datos ficticios...\n");
+  }else if(select == 1){ //mandamos datos reales , usar cuando calibremos el sensor
+    MQ135.update(); // Update data, the arduino will be read the voltage on the analog pin
+
+    MQ135.setA(110.47); MQ135.setB(-2.862);
+    CO2 = MQ135.readSensor();
+
+    MQ135.setA(605.18); MQ135.setB(-3.937);
+    CO = MQ135.readSensor();
+
+    MQ135.setA(77.255); MQ135.setB(-3.18);
+    Alcohol = MQ135.readSensor();
+
+    MQ135.setA(44.947); MQ135.setB(-3.445);
+    Toluene = MQ135.readSensor();
+
+    MQ135.setA(102.2 ); MQ135.setB(-2.473);
+    NH4 = MQ135.readSensor();
+
+    MQ135.setA(34.668); MQ135.setB(-3.369);
+    Acetone = MQ135.readSensor();
+    
+    Serial.print("CO2: ");
+    Serial.println(CO2);
+    Serial.print("NH4: ");
+    Serial.println(NH4); 
+    Serial.print("Alcohol: ");
+    Serial.println(Alcohol);
+    Serial.print("Acetone: ");
+    Serial.println(Acetone);
+    Serial.print("Light level: ");
+    Serial.println("Sending data...");
+
+    //delay(1000); //Sampling frequency
+
+  }
+
+    char msg[128];  
+    snprintf(msg, sizeof(msg), "{\"temp\": %.2f, \"pres\": %.2f, \"hum\": %.2f,\"co2\": %.2f,\"co\": %.2f}", temp, pres, hum,CO2,CO);
+
+    Serial.print("Enviando MQTT: ");
+    Serial.println(msg);
+
+    client.publish(mqtt_topic, msg);
+}
+void callback(char* topic, byte* payload, unsigned int length) {
+    Serial.print("Mensaje recibido en ");
+    Serial.print(topic);
+    Serial.print(": ");
+
+    // Convertir payload a String
+    String message;
+    for (int i = 0; i < length; i++) {
+        message += (char)payload[i];
+    }
+    Serial.println(message);
+
+    // Parsear JSON
+    StaticJsonDocument<200> doc;
+    DeserializationError error = deserializeJson(doc, message);
+    
+    if (error) {
+        Serial.println("Error al parsear JSON");
+        return;
+    }
+
+    if (strcmp(topic, fan_topic) == 0) {// botones on off
+        fanState = doc["ventilador"];//recibo true o false       
+        Serial.print("Ventilador en manual: ");
+        Serial.println(fanState ? "ENCENDIDO" : "APAGADO");
+        
+    }else if (strcmp(topic, mode_topic) == 0) {// modo manual , automatico
+        mode = doc["modo"].as<String>();
+        Serial.print("Modo cambiado a: ");
+        Serial.println(mode);
+    } else if (strcmp(topic, config_umbral ) == 0) { //umbral temp co2
+        tempThreshold = doc["tempUmbral"];
+        co2Threshold = doc["co2Umbral"];
+        Serial.print("Nuevo umbral temp: ");
+        Serial.println(tempThreshold);
+        Serial.print("Nuevo umbral CO2: ");
+        Serial.println(co2Threshold);
+    }
+
+    //LOGICA ENCENDIDO DE VENTILADOR
+    if (mode == "manual") {
+        digitalWrite(FAN_PIN, fanState ? HIGH : LOW);
+    }else if (mode == "automatico") {
+        float temp = bme.readTemperature();
+        float co2 = CO2; // Ya calculado en enviarDatosMQTT
+
+        if (temp >= tempThreshold || co2 >= co2Threshold) {
+            digitalWrite(FAN_PIN, HIGH);
+            fanState = true;
+        } else {
+            digitalWrite(FAN_PIN, LOW);
+            fanState = false;
+        }    
+    }
+    
+   // Enviar estado del ventilador
+    StaticJsonDocument<100> statusDoc;
+    statusDoc["status"] = fanState;
+    char statusMsg[100];
+    serializeJson(statusDoc, statusMsg);
+    client.publish(ventilador_status, statusMsg);  
+}
+
+
