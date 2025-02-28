@@ -1,0 +1,17 @@
+{
+  "name": "mq135",
+  "author": "ProCoding Whitehat JR",
+  "pins": [
+    "VCC",
+    "GND",
+    "A0",
+    "D0","","",""
+  ],
+  "controls": [{
+      "id": "ppm",
+      "label": "PPM",
+      "type": "slider",
+      "min":10,
+      "max":1000
+    }]
+}
