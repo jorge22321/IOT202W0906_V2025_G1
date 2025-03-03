@@ -2,7 +2,7 @@
 
 Diagrama de la base de datos:  
 
-![](bd/Diagrama-influxdb.png)
+![](Diagrama-influxdb.png)
 
 Se incluye los datos exportados desde una instancia de la base de datos:  
 Comando:  
